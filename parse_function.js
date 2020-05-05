@@ -109,15 +109,15 @@ vx = 99;
 function asyncFunction(){
 	let k = 0;
 	setTimeout(function(){
-		console.info('i am edgarlli: ', vx, typeof(fs));
-		//fs.writeFileSync('./debug.txt', 'i am edgarlli', {flag: 'a'});
+		console.info('i am lizhihao: ', vx, typeof(fs));
+		//fs.writeFileSync('./debug.txt', 'i am lizhihao', {flag: 'a'});
 	}, 1000);
 	return 32;
 }
 
 //unitTest();
 function unitTest(){
-	eval('function say(){console.info( "kkk edgarlli");}');
+	eval('function say(){console.info( "kkk lizhihao");}');
 	say();
 	let f = parseCodeToFunctionEval(String(asyncFunction));
 	console.info(typeof(f), f(9,98));
