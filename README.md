@@ -18,8 +18,26 @@
 		5. "异步接口转同步", 往往意味着是一个不好的设计, 且改变了原始代码的逻辑. 要看具体场景是否需要使用.
 
 # 怎么用
+```
+const asyncLib = require('./async_to_sync.js');
+const callAsyncAsSyncByDetailInfo = asyncLib.asyncToSync;
+const asyncFuncChangeToSync = asyncLib.hookAsyncToSync;
+const callAsyncAsSync = asyncLib.callAsyncAsSync;
+```
+
 **1. 全局异步函数测试**
 ```
+  function setTimeoutSync(callback, timeoutMillsecs){
+	let asyncInfo = {
+		lib_path: null,
+		exported_func_name: 'setTimeout',
+
+		callback_at_first: true,	//首个参数是回调函数.
+	};
+
+	callAsyncAsSyncByDetailInfo(asyncInfo, callback, timeoutMillsecs);
+  }
+  
   function test_setTimeout(){
     console.info('before settimeout');
     setTimeout(function(){console.info('haha')}, 1000);
