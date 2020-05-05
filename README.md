@@ -74,16 +74,17 @@ const callAsyncAsSync = asyncLib.callAsyncAsSync;
     }
 
     function test_node_fetch_async(){
-      console.info("before asyncFetch");
-      asyncFetch('https://github.com/', {timeout: 1000, method: "GET"}, function(err, res){console.info('error code:', err, ', cannot find in builtin libdocument.length:', res.length)});
-      console.info("after asyncFetch");
-    }
-    
-    function test_node_fetch_async_sync(){
-      console.info("before sync-asyncFetch");
-      asyncFuncChangeToSync(asyncFetch)('https://github.com/', {timeout: 1000, method: "GET"}, function(err, res){console.info('error code:',err, ', document.length:' , res.length)});
-      console.info("after sync-asyncFetch");
-    }
+	console.info("before asyncFetch");
+	asyncFetch('https://github.com/', {timeout: 1000, method: "GET"}, function(err, res){console.info('error code:', err, ', document.length:', res.length)});
+	console.info("after asyncFetch");
+}
+
+
+function test_node_fetch_async_sync(){
+	console.info("before sync-asyncFetch");
+	asyncFuncChangeToSync(asyncFetch)('https://github.com/', {timeout: 1000, method: "GET"}, function(err, res){console.info('error code:',err, ', document.length:' , res.length)});
+	console.info("after sync-asyncFetch");
+}
 
 ```
 <br/>***test_node_fetch_async输出:***<br/>before asyncFetch<br/>after asyncFetch<br/>error code: 0 , document.length: 90623</br>
