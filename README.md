@@ -164,4 +164,4 @@ test__asyncFunc();
 ```
 ***输出见代码中的注释部分***
 
-详细使用方法见文件: async_to_sync_tests.js
+详细使用方法见文件: [async_to_sync_tests.js](https://raw.githubusercontent.com/juniorfans/async_to_sync/master/async_to_sync_tests.js)
