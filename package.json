@@ -1,0 +1,15 @@
+{
+  "name": "async_2_sync",
+  "version": "1.0.0",
+  "description": "async function to sync function",
+  "main": "async_to_sync.js",
+  "scripts": {
+    "test": "node async_to_sync_tests.js"
+  },
+  "author": "Li Zhihao",
+  "license": "ISC",
+  "dependencies": {
+    "acorn": "^7.1.1",
+    "esprima": "^4.0.1"
+  }
+}
