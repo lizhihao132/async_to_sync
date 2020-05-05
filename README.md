@@ -1,12 +1,12 @@
 ## async_to_sync
-make async function to sync function, builtin lib, third part lib, user define functions supported.
+将异步函数转为同步函数，几乎支持所有异步函数: 全局/内置/第三方库/自定义.
 
 
 # 做什么
 		1. 将异步函数以同步方式运行, hang 住 js 执行.
 		
 # 有什么用
-		1. 强制某些场景下代码执行顺序与数据依赖一致性. (如小游戏自动化测试)
+		1. 强制某些场景下代码执行顺序与数据依赖一致性. (如自动化测试)
 		2. 改造一个没有提供对应同步接口的异步接口. (如 node-fetch)
 		3. 造轮子纯粹为了好玩(暂未发现有类似的库)
 		
@@ -21,7 +21,7 @@ make async function to sync function, builtin lib, third part lib, user define f
 		4. 函数/结构化异常信息 在线程中使用 json 传输, 某些信息可能丢失. 不可解: 受限于js多线程共享内存为clone的原始字节.
 		5. "异步接口转同步", 往往意味着是一个不好的设计, 且改变了原始代码的逻辑. 要看具体场景是否需要使用.
 
-# 示例
+# 怎么用
 **1. 全局异步函数测试**
 ```
   function test_setTimeout(){
@@ -72,8 +72,8 @@ make async function to sync function, builtin lib, third part lib, user define f
     }
 
 ```
-<br/>***test_node_fetch_async输出:***<br/>before asyncFetch<br/>after asyncFetch<br/>error code: 0 , cannot find in builtin libdocument.length: 90623</br>
-<br/>***test_node_fetch_async输出:***<br/>before asyncFetch<br/>error code: 0 , cannot find in builtin libdocument.length: 90623</br>after asyncFetch<br/>
+<br/>***test_node_fetch_async输出:***<br/>before asyncFetch<br/>after asyncFetch<br/>error code: 0 , document.length: 90623</br>
+<br/>***test_node_fetch_async_sync输出:***<br/>before asyncFetch<br/>error code: 0 , document.length: 90623</br>after asyncFetch<br/>
 
 **3. nodejs内置库异步函数测试**
 ```
@@ -104,7 +104,6 @@ function myAsync(callback){
 	p.then(callback);
 }
 
-
 function test_myAsync(){
 	console.info('before my async');
 	myAsync(function(res){console.info(res);});
@@ -119,3 +118,36 @@ function test_myAsync_sync(){
 ```
 <br/>***test_myAsync输出:***<br/>before my async<br/>after my async<br/>hello world~<br/>
 <br/>***test_myAsync_sync输出:***<br/>before my async<br/>hello world~<br/>after my async<br/>
+
+**5. 一个较全的异步转同步测试**
+```
+let num = 999;
+function __asyncFunc(callback){
+	setTimeout(function(){
+		callback('number is: ' + num);
+	}, 2000);
+}
+
+function test__asyncFunc(){
+	let asyncFuncInfo1 = {
+		static_func: __asyncFunc,
+		timeout: 4000,		//主线程最多 hang 的时间.
+		refer_global_obj_stringified_strs: JSON.stringify({num: num})	//异步函数的实现中引用的外部变量.
+	};
+	
+	callAsyncAsSyncByDetailInfo(asyncFuncInfo1, function(str){console.info(str)});	//输出: number is: 999
+	
+	let asyncFuncInfo2 = {
+		static_func: __asyncFunc,
+		timeout: 1000,
+		refer_global_obj_stringified_strs: JSON.stringify({num: num})
+	};
+	
+	callAsyncAsSyncByDetailInfo(asyncFuncInfo2, function(str){console.info(str)});	//抛出异常: "wait timeout 1000"
+}
+
+test__asyncFunc();
+```
+***输出见代码中的注释部分***
+
+详细使用方法见文件: async_to_sync_tests.js
