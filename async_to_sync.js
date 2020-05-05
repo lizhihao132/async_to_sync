@@ -733,7 +733,8 @@ function __interface(asyncInfo, ...params){
 		throw asyncRes;
 	}
 	else if(isTimeout){
-		console.info('wait timeout ');
+		let err = 'wait timeout ' + asyncInfo.timeout;
+		throw err;
 	}
 	else if (isCallbackAsync){
 		//异步函数已经在 async 调用里面触发过, 此处直接跳过即可.
