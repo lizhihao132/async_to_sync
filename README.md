@@ -94,19 +94,19 @@ function test_node_fetch_async_sync(){
 function test_readFile(){
 	const fs = require('fs');
 	console.info('before fs.readFile');
-	fs.readFile(__filename, 'utf-8', function(err, content){console.info(err, 'file length: ' + (!err?content.length: 0))});
+	fs.readFile(__filename, 'utf-8', function(err, content){console.info(err, 'file length: ' + (!err?Math.floor(content.length/1024): 0) + ' kb')});
 	console.info('after fs.readFile');
 }
 
 function test_readFile_sync(){
 	const fs = require('fs');
 	console.info('before fs.readFile');
-	asyncFuncChangeToSync(fs.readFile)(__filename, 'utf-8', function(err, content){console.info(err, 'file length: ' + (!err?content.length: 0))});
+	asyncFuncChangeToSync(fs.readFile)(__filename, 'utf-8', function(err, content){console.info(err, 'file length: ' + (!err?Math.floor(content.length/1024): 0) + ' kb')});
 	console.info('after fs.readFile');
 }
 ```
-<br/>***test_readFile输出:***</br>before fs.readFile<br/>after fs.readFile<br/>null file length: 3600<br/>
-<br/>***test_readFile_sync输出:***<br/>before fs.readFile<br/>null file length: 3605<br/>after fs.readFile<br/>
+<br/>***test_readFile输出:***</br>before fs.readFile<br/>after fs.readFile<br/>null file length: 4kb<br/>
+<br/>***test_readFile_sync输出:***<br/>before fs.readFile<br/>null file length: 4kb<br/>after fs.readFile<br/>
 
 **4. 用户自定义异步函数测试**
 ```
