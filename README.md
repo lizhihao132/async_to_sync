@@ -31,7 +31,6 @@ const callAsyncAsSync = asyncLib.callAsyncAsSync;
 	let asyncInfo = {
 		lib_path: null,
 		exported_func_name: 'setTimeout',
-
 		callback_at_first: true,	//首个参数是回调函数.
 	};
 
