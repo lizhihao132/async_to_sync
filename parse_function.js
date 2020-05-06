@@ -1,5 +1,14 @@
-const astUtils = require('./simple_ast_utils.js');
-const AstCombineWalkerEngine = require('./ast_combine_walker.js').AstCombineWalkerEngine;
+if(typeof(getRelativeLibPath) === 'undefined'){
+	function getRelativeLibPath(relative){
+		let curJs = __dirname+'/'
+		let e = new RegExp('\\\\', 'g');
+		curJs = curJs.replace(e, '/');
+		return curJs + relative;
+	}
+}
+
+const astUtils = require(getRelativeLibPath('./simple_ast_utils.js'));
+const AstCombineWalkerEngine = require(getRelativeLibPath('./ast_combine_walker.js')).AstCombineWalkerEngine;
 
 class FunctionWalker{
 	constructor(){
@@ -67,7 +76,7 @@ function log(str){
 }
 
 function parseCodeToFunctionEval(code){
-	
+	log('============= in parse function');
 	let resObj = astUtils.getAst(code);
 	//__ast_errmsg, __ast, __ast_source_type
 	if(!resObj.__ast){
@@ -96,7 +105,7 @@ function parseCodeToFunctionEval(code){
 	funcCode += ') ' + code.substring(bodyRange[0], bodyRange[1]);
 	funcCode += '; ' + fname;
 	//console.info(funcCode);
-	//log('=============' + funcCode);
+	log('=============' + funcCode);
 	return eval(funcCode);
 }
 

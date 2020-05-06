@@ -1,24 +1,3 @@
-/**
-	做什么:
-		1. 将异步函数以同步方式运行, hang 住 js 执行.
-		
-	有什么用:
-		1. 强制某些场景下代码执行顺序与数据依赖一致性. (如小游戏自动化测试)
-		2. 改造一个没有提供对应同步接口的异步接口. (如 node-fetch)
-		3. 造轮子纯粹为了好玩(暂未发现有类似的库)
-		
-	实现:
-		主要: 将异步函数及它的回调一分为二: 将异步函数放到子线程中执行, 回调函数放到当前线程中执行.
-		次要: 跨线程共享结构化数据(异常, 函数实现, 参数 ...), ast 解析.
-	
-	局限:
-		1. 目前仅实现 nodejs 宿主(>=10.5.0), 浏览器下待实现(有一些工作量).
-		2. 没有对 await/async 语法糖处理, 暂只支持带回调的异步函数到同步的转换. 前者适配不麻烦, 测试案例中有一个类似处理(myAsync).
-		3. 原异步函数的回调函数若在原事件循环中不会被执行, 则当前线程会整体 hang 住. 可以通过设置 timeout 来避免死锁.
-		4. 函数/结构化异常信息 在线程中使用 json 传输, 某些信息可能丢失. 不可解: 受限于js多线程共享内存为clone的原始字节.
-		5. "异步接口转同步", 往往意味着是一个不好的设计, 且改变了原始代码的逻辑. 要看具体场景是否需要使用.
-*/
-
 
 module.exports = {
 	//inner
@@ -53,6 +32,13 @@ function log(str, force){
 	fs.writeFileSync('./debug.txt', '====== ' +  (isMainThread? '[main-thread] ':'[sub-thread] ') + str + '\n', {flag: 'a'});
 }
 
+function getRelativeLibPath(relative){
+	let curJs = __dirname+'/'
+	let e = new RegExp('\\\\', 'g');
+	curJs = curJs.replace(e, '/');
+	return curJs + relative;
+}
+
 //异步函数转换器
 class AsyncFuncConverter{
 	constructor(){
@@ -70,6 +56,7 @@ class AsyncFuncConverter{
 	builtinAsyncFuncConvert(asyncInfo){
 		if(asyncInfo.static_func){
 			
+			/*
 			let obj1 = asyncInfo.static_func;
 			let obj2 = require('fs').readFile;
 			
@@ -78,6 +65,7 @@ class AsyncFuncConverter{
 			
 			log(code1, true);
 			log(code2, true);
+			*/
 			let builtInLibInfo = this.__find_in_builtin_lib(asyncInfo.static_func);
 			if(builtInLibInfo){
 				asyncInfo.lib_path = builtInLibInfo.lib_path;
@@ -145,15 +133,18 @@ class AsyncFuncParse{
 		}
 		//3. 序列化的 func 信息.
 		else if(asyncFuncInfo.static_func_source_str){
-			
-			const code2Function = require('./parse_function.js');
+			let pflib = getRelativeLibPath( './parse_function.js');
+			log('-----------pflib: ' + pflib);
+			const code2Function = require(pflib);
 			//log(asyncFuncInfo.static_func_source_str);;
 			return code2Function(asyncFuncInfo.static_func_source_str);
 		}
 		//4. 根据 func 定义.
 		else if(asyncFuncInfo.static_func){
 			let code = String(asyncFuncInfo.static_func);
-			const code2Function = require('./parse_function.js');
+			let pflib = getRelativeLibPath( './parse_function.js');
+			log('-----------pflib: ' + pflib);
+			const code2Function = require(pflib);
 			return code2Function(code);
 		}
 		else{
@@ -478,6 +469,7 @@ function __implement (){
 	const utils = require('util');
 	
 	if (isMainThread) {
+		//log('main-thread at: ' + process.cwd()); process.chdir
 		//console.info('running in main-thread');
 		let __async_func_info = GetAsyncFuncInfo();
 		let __args = GetArgs();
@@ -511,7 +503,7 @@ function __implement (){
 
 		let dataChannel = new DataTransferChannel();
 
-		let obj = {async_func_info: __async_func_info, args: __args};
+		let obj = {async_func_info: __async_func_info, args: __args, async_2_sync_lib_dir: __dirname};
 		worker.postMessage(JSON.stringify(obj));
 		
 		//console.info('main-thread switch to wait for sub-thread finish call async func...');
@@ -545,6 +537,7 @@ function __implement (){
 
 	else 
 	{
+		//log(process.cwd());
 		let sabManager = new SharedArrayBufferManager(workerData);
 		let locker = new StateLocker(sabManager.mapViewOfStateControllers());
 		locker.workerReadyNotify();
@@ -560,6 +553,7 @@ function __implement (){
 			params = JSON.parse(params);
 			args = params.args;
 			let asyncFuncInfo = params.async_func_info;
+			__dirname = params.async_2_sync_lib_dir;		//worker 线程若由 eval 启动, 则 __dirname 会不正确, 此处校准.
 			
 			//log('typeof(asyncFuncInfo) ' + typeof(asyncFuncInfo));
 			
@@ -567,7 +561,7 @@ function __implement (){
 				asyncFunc = new AsyncFuncParse(asyncFuncInfo).parse();
 				timeout = asyncFuncInfo.timeout;
 			}catch(err){
-				log('parse async func failed.');
+				log('parse async func failed. ' + String(err));
 			}
 			log('parse async func success. ' + typeof(asyncFunc) + ', ' + typeof(typeof(asyncFunc)));
 			
