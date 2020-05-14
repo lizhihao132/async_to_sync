@@ -24,6 +24,7 @@ function __serializeError(err){
 
 //let DEBUG = 1;
 function log(str, force){
+	return;
 	if(typeof(DEBUG) === 'undefined'){
 		return;
 	}
@@ -463,9 +464,9 @@ class DataTransferChannel{
 }
 
 
-function __implement (){
+function __implement (isMainThread){
 	let {
-		Worker, isMainThread, parentPort, workerData
+		Worker, parentPort, workerData
 	} = require('worker_threads');
 	const utils = require('util');
 	
@@ -478,7 +479,7 @@ function __implement (){
 		
 		let sabManager = new SharedArrayBufferManager();
 		const fs = require('fs');
-		let code = fs.readFileSync(__filename, 'utf-8') + '\n __implement();';
+		let code = fs.readFileSync(__filename, 'utf-8') + '\n __implement(false);';
 		const worker = new Worker(code, {
 			eval: true,
 			workerData: sabManager.getSab()
@@ -720,7 +721,7 @@ function __interface(asyncInfo, ...params){
 	}
 	
 	let run = require(__filename).__implement;
-	run();
+	run(true);
 	
 	if(isException){
 		throw asyncRes;

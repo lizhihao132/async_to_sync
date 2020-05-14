@@ -39,7 +39,6 @@ function test_setTimeoutSync(){
 	console.info('after settimeout');
 }
 
-
 ////////////////////////////////////////////////////////////////
 //2. change 'third library async function' to sync and test
 function asyncFetch(url, options, callback){
@@ -71,7 +70,6 @@ function test_node_fetch_async_sync(){
 	asyncFuncChangeToSync(asyncFetch)('https://github.com/', {timeout: 1000, method: "GET"}, function(err, res){console.info('error code:',err, ', document.length:' , res.length)});
 	console.info("after sync-asyncFetch");
 }
-
 
 ////////////////////////////////////////////////////////////////
 //3. change 'builtin library async function' to sync and test
