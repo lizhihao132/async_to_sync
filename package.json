@@ -1,15 +1,24 @@
 {
-  "name": "async_2_sync",
-  "version": "1.0.0",
-  "description": "async function to sync function",
+  "name": "@trustable/async_to_sync",
+  "version": "1.0.1",
+  "description": "change async function to sync, for example, you can change a async lib to sync simply, or do more things.",
   "main": "async_to_sync.js",
+  "keywords": [ 
+	"async to sync", "async", "sync" 
+	],
+	"repository": {
+	  "type": "git",
+	  "url": "git@github.com:juniorfans/async_to_sync.git"
+	},
   "scripts": {
     "test": "node async_to_sync_tests.js"
   },
+  
   "author": "Li Zhihao",
   "license": "ISC",
   "dependencies": {
     "acorn": "^7.1.1",
-    "esprima": "^4.0.1"
+    "esprima": "^4.0.1",
+    "serialize-error": "^7.0.1"
   }
 }

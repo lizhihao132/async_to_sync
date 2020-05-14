@@ -268,13 +268,14 @@ class SharedArrayBufferManager{
 	}
 	
 	mapViewOfStateControllers(){
-		return new Int32Array(this.__sab, 0, this.__state_controller_bytes);
+		//https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Int32Array
+		return new Int32Array(this.__sab, 0, this.__state_controller_bytes / Int32Array.BYTES_PER_ELEMENT);	//第三个参数指 int32 的个数, 而非字节数.
 	}
 
 	//第 0 个整数表示总字节数, 第 1 个整数表示当前传输的字节数, 第 2 个整数表示是否还有后续.
 	mapViewOfDataTransferControllers(){
 		let curOffset = this.__state_controller_bytes;
-		return new DataTransferHeader( new Uint32Array(this.__sab, curOffset, this.__data_transfer_controller_bytes) );
+		return new DataTransferHeader( new Uint32Array(this.__sab, curOffset, this.__data_transfer_controller_bytes / Uint32Array.BYTES_PER_ELEMENT) );
 	}
 
 	mapViewOfDataSharedBuffer(){

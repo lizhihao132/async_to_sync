@@ -1,0 +1,37 @@
+============= in parse function
+=============function _7199863 (callback) {
+	setTimeout(function(){
+		callback('number is: ' + num);
+	}, 2000);
+}; _7199863
+============= in parse function
+=============function _3388726 (callback) {
+	setTimeout(function(){
+		callback('number is: ' + num);
+	}, 2000);
+}; _3388726
+============= in parse function
+=============function _1274853 (callback) {
+	let p = new Promise((resolve, reject) => {
+	  resolve('hello world~');
+	});
+	
+	p.then(callback);
+}; _1274853
+============= in parse function
+=============function _1374870 (url,options,callback) {
+	const HttpsProxyAgent = require('https-proxy-agent');
+	const fetch = require('node-fetch');
+	
+	options.agent = new HttpsProxyAgent("http://127.0.0.1:12759") 
+	
+	fetch(url, options).then(function(res){
+		if(res.ok){
+			return res.text();
+		}else{
+			callback(res.status, null);
+		}
+	}).then(function(res){
+		callback(0, res);
+	});
+}; _1374870

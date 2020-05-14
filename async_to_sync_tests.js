@@ -90,7 +90,6 @@ function test_readFile_sync(){
 	console.info('after fs.readFile');
 }
 
-
 ////////////////////////////////////////////////////////////////
 //4. change 'user define async function' to sync and test
 
@@ -142,5 +141,3 @@ function test__asyncFunc(){
 	
 	callAsyncAsSyncByDetailInfo(asyncFuncInfo2, function(str){console.info(str)});	//抛出异常: "wait timeout 1000"
 }
-
-
