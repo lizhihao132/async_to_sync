@@ -1,3 +1,4 @@
+
 module.exports = {
 	//inner
 	__implement: __implement,
@@ -584,8 +585,6 @@ function __implement (){
 				//asyncFunc 的回调函数据可能是在异步函数 (如setTimeout) 中被调的
 				//asyncFunc 传入的参数可能与实际定义的不符, 比如 asyncFunc 只有一个参数(回调函数), 但若给它也传入了多个参数，会导致此处的匿名回调函数不会被执行到. 于是不会调用 sendOn, 会造成主线程死等.
 				
-				
-				
 				let createdCallback = function(){
 					callbackCalled = true;
 					let buf = workerData;
@@ -735,17 +734,21 @@ function __interface(asyncInfo, ...params){
 	}
 	else{
 		//console.info('+++++++',asyncRes);
-		let resList = [];
-		let i = 0;
-		while(true){
-			if(asyncRes.hasOwnProperty(i)){
-				resList.push(asyncRes[i]);
-				++ i;
+		if(!asyncRes){
+			callback();
+		}else{
+			let resList = [];
+			let i = 0;
+			while(true){
+				if(asyncRes.hasOwnProperty(i)){
+					resList.push(asyncRes[i]);
+					++ i;
+				}
+				else{
+					break;
+				}
 			}
-			else{
-				break;
-			}
+			callback(... resList);
 		}
-		callback(... resList);
 	}
 }
