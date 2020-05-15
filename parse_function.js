@@ -71,6 +71,7 @@ function parseCodeToFunction(code){
 }
 
 function log(str){
+	return;
 	const fs = require('fs');
 	fs.writeFileSync('./debug.txt', str + '\n', {flag: 'a'});
 }
