@@ -651,10 +651,14 @@ function __implement (isMainThread){
 	当 hook 一个库函数时, 需要处理一种情况: 返回的新函数又重新赋值给库函数, 而 __interface 中又会访问到它, 具体而言, 在 Converter 中会漏过把内置库函数变成 lib_path + exported_func_name 的形式, 进一步地导致后续失败.
 	解决办法是此处先 convert 一下, 避免后续 convert 中与内置库比较. 
 */
-function __hook(asyncFunc){
+function __hook(asyncFunc, timeoutMillsecs){
 	let asyncInfo = {
 		static_func: asyncFunc,
 	};
+	
+	if(timeoutMillsecs){
+		asyncInfo.timeout = timeoutMillsecs;
+	}
 		
 	gloal_asyncfunc_converter.builtinAsyncFuncConvert(asyncInfo);	//先下手为强, 见上注释.
 	return function(... params)
