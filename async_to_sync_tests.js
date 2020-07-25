@@ -1,8 +1,8 @@
 const asyncLib = require('./async_to_sync.js');
-const callAsyncAsSyncByDetailInfo = asyncLib.asyncToSync;
-const asyncFuncChangeToSync = asyncLib.hookAsyncToSync;
+const callAsyncAsSyncByDetailInfo = asyncLib.callAsyncAsSyncEx;
+const asyncFuncChangeToSync = asyncLib.asyncToSync;
 const callAsyncAsSync = asyncLib.callAsyncAsSync;
-
+const callAsyncWithManualWait = asyncLib.callAsyncWithManualWait;
 
 ////////////////////////////////////////////////////////////////
 //1. change 'global async function' to sync and test
@@ -28,14 +28,16 @@ function setIntervalSync(callback, timeoutMillsecs){
 }
 
 function test_setTimeout(){
-	console.info('before settimeout');
-	setTimeout(function(){console.info('haha')}, 1000);
+	const waitMs = 1000;
+	console.info('before settimeout.');
+	setTimeout(function(){console.info('【Yeah, You see Me ...】')}, waitMs);
 	console.info('after settimeout');
 }
 
 function test_setTimeoutSync(){
-	console.info('before settimeout');
-	setTimeoutSync(function(){console.info('haha')}, 1000);
+	const waitMs = 1000;
+	console.info('before settimeout. You will see something after ' + waitMs + ' ms, but before "after settimeout"');
+	setTimeoutSync(function(){console.info('【Yeah, You see Me ...】')}, waitMs);
 	console.info('after settimeout');
 }
 
@@ -88,6 +90,20 @@ function test_readFile_sync(){
 	console.info('after fs.readFile');
 }
 
+function test_call_readFile_with_manual_wait(){
+	const fs = require('fs');
+	console.info('before fs.readFile');
+	let waitFunc = callAsyncWithManualWait(fs.readFile, __filename, 'utf-8');
+	
+	//do something...
+	test_setTimeoutSync();	//同步等待 1 秒 (使用本库实现)
+	
+	let res = waitFunc();
+	console.info('file length: ' + Math.floor(res.length/1024) + ' kb');
+	
+	console.info('after fs.readFile');
+}
+//test_call_readFile_with_manual_wait();
 ////////////////////////////////////////////////////////////////
 //4. change 'user define async function' to sync and test
 

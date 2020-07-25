@@ -4,9 +4,20 @@ module.exports = {
 	__implement: __implement,
 	
 	//exported
-	asyncToSync: __interface,
+	//将一个异步函数作为同步函数来调用. 定制化程度高.
+	callAsyncAsSyncEx: __interface,
+	
+	//将一个异步函数转化为同步函数, 但不调用它.
+	asyncToSync: __hook,
+	
+	//将一个异步函数作为同步函数来调用. 只支持"静态的"函数(即没有依赖其它函数)
 	callAsyncAsSync: __interfaceForStaticFunc,
-	hookAsyncToSync: __hook,
+	
+	//调用一个异步函数, 但不立即等待它, 返回一个函数, 当需要等待那个异步函数的结果时, 调用此函数即完成等待得到结果.
+	callAsyncWithManualWait: __interfaceManualWait,
+	
+	//将一个异步函数转化为"可等待的异步函数", 但不调用它.
+	asyncToWaitableAsync: __hook_interfaceManualWait,
 }
 
 //异常序列化.
@@ -24,7 +35,6 @@ function __serializeError(err){
 
 //let DEBUG = 1;
 function log(str, force){
-	return;
 	if(typeof(DEBUG) === 'undefined'){
 		return;
 	}
@@ -464,7 +474,7 @@ class DataTransferChannel{
 }
 
 
-function __implement (isMainThread){
+function __implement (isMainThread, manualWait){
 	let {
 		Worker, parentPort, workerData
 	} = require('worker_threads');
@@ -503,40 +513,78 @@ function __implement (isMainThread){
 
 		locker.resetAll();
 
-		let dataChannel = new DataTransferChannel();
-
 		let obj = {async_func_info: __async_func_info, args: __args, async_2_sync_lib_dir: __dirname};
 		worker.postMessage(JSON.stringify(obj));
 		
 		//console.info('main-thread switch to wait for sub-thread finish call async func...');
-
-		let resData = dataChannel.recieveOn(sabManager, timeout);
 		
-		let tempUint8Array = resData.data;
-		let isException = resData.is_exception;
-		let isCallbackAsync = resData.is_callback_async;
-		let isTimeout = resData.is_timeout;
+		let waitWorkerThreadFinish = function(newTimeout){
+			if(undefined === newTimeout || null === newTimeout){
+				newTimeout = timeout;
+			}
+			let dataChannel = new DataTransferChannel();
+			let resData = dataChannel.recieveOn(sabManager, newTimeout);
+			let tempUint8Array = resData.data;
+			let isException = resData.is_exception;
+			let isCallbackAsync = resData.is_callback_async;
+			let isTimeout = resData.is_timeout;
+			
+			if(isTimeout){
+				//console.info('[main-thread] wait timeout.');
+				SetAsyncRes(null,null,null, true);
+			}
+			else{
+				//console.info('[main-thread] now set final result, ' + tempUint8Array.length);
+				
+				const decoder = new utils.TextDecoder("utf-8");
+				let jsonStr = decoder.decode(tempUint8Array);	//Uint8ArrayToString(res)//
+				let jsonObj = JSON.parse(jsonStr);
+				
+				SetAsyncRes(jsonObj, isException, isCallbackAsync);
+			}
+			//console.info('main-thread return to outter....');
+			//异步杀死子线程(本质上是让 js 同步事件队列为空时再杀死子线程): 如果直接杀死, 会导致子线程中的 console 日志不打印.
+			setTimeout(function(){
+				worker.terminate()
+			}, 0);
+		}
 		
-		if(isTimeout){
-			//console.info('[main-thread] wait timeout.');
-			SetAsyncRes(null,null,null, true);
-		}
-		else{
-			//console.info('[main-thread] now set final result, ' + tempUint8Array.length);
-			
-			const decoder = new utils.TextDecoder("utf-8");
-			let jsonStr = decoder.decode(tempUint8Array);	//Uint8ArrayToString(res)//
-			let jsonObj = JSON.parse(jsonStr);
-			
-			SetAsyncRes(jsonObj, isException, isCallbackAsync);
-		}
-		//console.info('main-thread return to outter....');
-		//异步杀死子线程(本质上是让 js 同步事件队列为空时再杀死子线程): 如果直接杀死, 会导致子线程中的 console 日志不打印.
-		setTimeout(function(){
-			worker.terminate()
-		}, 0);
-	} 
+		//自动等待
+		if(!manualWait){
+			waitWorkerThreadFinish();
+		}else{
+			return function(newTimeout){
+				if(undefined === newTimeout || null === newTimeout){
+					newTimeout = timeout;
+				}
+				let dataChannel = new DataTransferChannel();
+				let resData = dataChannel.recieveOn(sabManager, newTimeout);
+				let tempUint8Array = resData.data;
+				let isException = resData.is_exception;
+				let isCallbackAsync = resData.is_callback_async;
+				let isTimeout = resData.is_timeout;
 
+				if(isTimeout){
+					throw 'timeout';
+				}
+				else if(isException){
+					throw resData;
+				}
+				else{
+					
+					const decoder = new utils.TextDecoder("utf-8");
+					let jsonStr = decoder.decode(tempUint8Array);	//Uint8ArrayToString(res)//
+					//let jsonObj = JSON.parse(jsonStr);
+					return jsonStr;
+				}
+				//console.info('main-thread return to outter....');
+				//异步杀死子线程(本质上是让 js 同步事件队列为空时再杀死子线程): 如果直接杀死, 会导致子线程中的 console 日志不打印.
+				setTimeout(function(){
+					worker.terminate()
+				}, 0);
+			}
+		}
+	}
 	else 
 	{
 		//log(process.cwd());
@@ -578,7 +626,7 @@ function __implement (isMainThread){
 				return;
 			}
 			
-			log('now call async function, timeout: ' + timeout);
+			log('now call async function, timeout: ' + timeout + ", args: " + JSON.stringify(args));
 		
 			//将异步函数丢进子线程中运行, 并且在子线程中将异常函数给予回调函数的参数发送到主线程.
 			let callbackCalled = false;
@@ -592,13 +640,16 @@ function __implement (isMainThread){
 					let buf = workerData;
 					
 					log('in callback  params: ' + typeof(arguments) + ':' + JSON.stringify(arguments) + '\n');
-					let resJsonStr = '{}';
+					let resJsonStr = arguments;
 					let isException = false;
-					try{
-						resJsonStr = JSON.stringify(arguments);
-					}catch(err){
-						resJsonStr = __serializeError(err);
-						isException = true;
+					if(!manualWait){
+						
+						try{
+							resJsonStr = JSON.stringify(arguments);
+						}catch(err){
+							resJsonStr = __serializeError(err);
+							isException = true;
+						}
 					}
 					
 					log('..................... async-call-back end.');
@@ -628,14 +679,6 @@ function __implement (isMainThread){
 				log('call async exception: ' + jsonStr);
 				dataChannel.sendOn(sabManager, jsonStr, {isException: true}, timeout);
 			}
-			
-			/*
-			//这个逻辑有点问题. 本身 asyncFunc 就是个异步的. 它会立即被执行到.
-			if(!callbackCalled){
-				log('callback is not called, must sendOn an empty data.');
-				dataChannel.sendOn(sabManager, JSON.stringify({warn: "current async[1]\'scallback contains async function call[2], only can wait 1 to finish, cannot wait fot 1 to finish"}), {isCallbackAsync: true}, timeout);
-			}
-			*/
 			
 			log('sub thread finished.');
 			//console.info('[sub-thread] returning ...');
@@ -677,6 +720,49 @@ function __interfaceForStaticFunc(asyncFunc, ... params){
 	
 	__interface(asyncInfo, ... params)
 }
+
+function __interfaceManualWait(asyncFunc, ...params){
+	let asyncInfo = {
+		static_func: asyncFunc,
+	};
+	
+	gloal_asyncfunc_converter.convert(asyncInfo);
+
+	GetAsyncFuncInfo = function(){
+		return asyncInfo;
+	}
+	GetArgs = function(){
+		return params;
+	}
+
+	let run = require(__filename).__implement;
+	return run(true, true);
+}
+
+function __hook_interfaceManualWait(asyncFunc, timeoutMillsecs){
+	let asyncInfo = {
+		static_func: asyncFunc,
+	};
+	if(timeoutMillsecs){
+		asyncInfo.timeout = timeoutMillsecs;
+	}
+	
+	GetAsyncFuncInfo = function(){
+		return asyncInfo;
+	}
+	GetArgs = function(){
+		return params;
+	}
+		
+	gloal_asyncfunc_converter.builtinAsyncFuncConvert(asyncInfo);	//先下手为强, 见上注释.
+
+	return function(... params)
+	{
+		let run = require(__filename).__implement;
+		return run(true, true);
+	};
+}
+
 
 /*
 	asyncInfo: {
